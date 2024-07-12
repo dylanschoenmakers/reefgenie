@@ -5,6 +5,7 @@
 
 #include "esphome/components/a4988/a4988.h"
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/tcs34725/tcs34725.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/core/automation.h"
 #include "esphome/core/component.h"
@@ -28,20 +29,28 @@ enum State {
 };
 
 enum TritationCommand {
-  SELECT_VALVE,
+  OPEN_VALVE,
   PUMP_IN,
   PUMP_OUT,
   STIR,
   WAIT,
-  DOSE_DROPS,
+  DOSE_UNTIL_COLOR,
+  DOSE_QUANTITY,
   TEST_COLOR,
   CALCULATE_CONCENTRATION
+};
+
+struct ColorTarget {
+  float r;
+  float g;
+  float b;
 };
 
 union TritationCommandParameter {
   uint16_t valve;
   float amount;
   unsigned long duration;
+  ColorTarget color;
 };
 
 struct TritationStep {
@@ -61,6 +70,7 @@ class ReefGenie : public PollingComponent, public i2c::I2CDevice {
   // Stepper motor control
   void set_valve(stepper::Stepper* stepper) { this->valve_ = stepper; }
   void set_pump(stepper::Stepper* stepper) { this->pump_ = stepper; }
+  void set_colorimeter(tcs34725::TCS34725Component* component) { this->colorimeter_ = component; }
   void set_sleep_pin(GPIOPin* sleep_pin) { this->sleep_pin_ = sleep_pin; }
 
   // User commands
@@ -71,10 +81,12 @@ class ReefGenie : public PollingComponent, public i2c::I2CDevice {
   TritationStep current_step();
   std::vector<TritationStep> current_tritation();
 
-  void select_valve(uint16_t valve);
+  void open_valve(uint16_t valve);
   void pump(float amount);
   void stir();
   void wait(unsigned long duration);
+  void dose_until_color();
+  void dose_quantity();
   void calculate_concentration();
 
   int32_t valve_current_position{0};
@@ -103,6 +115,7 @@ class ReefGenie : public PollingComponent, public i2c::I2CDevice {
  protected:
   stepper::Stepper* valve_{nullptr};
   stepper::Stepper* pump_{nullptr};
+  tcs34725::TCS34725Component* colorimeter_{nullptr};
   GPIOPin* sleep_pin_{nullptr};
   bool sleep_pin_state_;
 
@@ -121,35 +134,35 @@ class ReefGenie : public PollingComponent, public i2c::I2CDevice {
   text_sensor::TextSensor* current_operation_{nullptr};
 
   std::vector<TritationStep> AlkalinityTritation = {
-      {SELECT_VALVE, {.valve = TANK_POS}, "Select tank valve"},
+      {OPEN_VALVE, {.valve = TANK_POS}, "Open tank valve"},
       {PUMP_IN, {.amount = 2.0}, "Pumping in 2ml tank water"},
       {WAIT, {.duration = 2000}, "Waiting for 2 seconds"},
-      {SELECT_VALVE, {.valve = REAGENT_A_POS}, "Select reagent A valve"},
-      {PUMP_IN, {.amount = 2.0}, "Pumping in 2ml reagent A"},
+      {OPEN_VALVE, {.valve = REAGENT_A_POS}, "Open reagent A valve"},
+      // {DOSE_UNTIL_COLOR, {.color = {200.0F, 200.0F, 200.0F}}, "Dosing reagent A until color blue detected"},
       {CALCULATE_CONCENTRATION, {}, "Calculating calcium concentration"},
       {WAIT,
        {.duration = 2000},
        "Finished, waiting for 2 seconds before draining"},
-      {SELECT_VALVE, {.valve = DRAIN_POS}, "Select drain valve"},
+      {OPEN_VALVE, {.valve = DRAIN_POS}, "Open drain valve"},
       {PUMP_OUT, {.amount = 2.0}, "Pumping out 2ml of water"},
   };
 
   std::vector<TritationStep> CalciumTritation = {
-      {SELECT_VALVE, {.valve = TANK_POS}, "Select tank valve"},
+      {OPEN_VALVE, {.valve = TANK_POS}, "Open tank valve"},
       {PUMP_IN, {.amount = 2.0}, "Pumping in 2ml tank water"},
       {WAIT, {.duration = 2000}, "Waiting for 2 seconds"},
-      {SELECT_VALVE, {.valve = REAGENT_B_POS}, "Select reagent A valve"},
+      {OPEN_VALVE, {.valve = REAGENT_B_POS}, "Open reagent A valve"},
       {PUMP_IN, {.amount = 2.0}, "Pumping in 2ml reagent A"},
       {CALCULATE_CONCENTRATION, {}, "Calculating calcium concentration"},
       {WAIT,
        {.duration = 2000},
        "Finished, waiting for 2 seconds before draining"},
-      {SELECT_VALVE, {.valve = DRAIN_POS}, "Select drain valve"},
+      {OPEN_VALVE, {.valve = DRAIN_POS}, "Open drain valve"},
       {PUMP_OUT, {.amount = 2.0}, "Pumping out 2ml of water"},
   };
 
   std::vector<TritationStep> MagnesiumTritation = {
-      {SELECT_VALVE, {TANK_POS}},
+      {OPEN_VALVE, {TANK_POS}},
       {PUMP_IN, {.amount = 2.0}},
   };
 };

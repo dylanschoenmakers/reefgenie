@@ -2,6 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation, pins
 from esphome.components import i2c, output, binary_sensor, sensor, stepper
+from esphome.components.tcs34725.sensor import TCS34725Component
 from esphome.automation import maybe_simple_id
 from esphome.const import (CONF_ID, CONF_SLEEP_PIN)
 
@@ -29,6 +30,7 @@ TestMagnesiumAction = reefgenie_ns.class_(
 
 CONF_VALVE_ID = 'valve_id'
 CONF_PUMP_ID = 'pump_id'
+CONF_COLORIMETER_ID = 'colorimeter_id'
 
 CONFIG_SCHEMA = cv.COMPONENT_SCHEMA.extend(
     cv.Schema(
@@ -36,6 +38,7 @@ CONFIG_SCHEMA = cv.COMPONENT_SCHEMA.extend(
             cv.GenerateID(): cv.declare_id(ReefGenie),
             cv.Required(CONF_VALVE_ID): cv.use_id(stepper.Stepper),
             cv.Required(CONF_PUMP_ID): cv.use_id(stepper.Stepper),
+            cv.Required(CONF_COLORIMETER_ID): cv.use_id(TCS34725Component),
             cv.Optional(CONF_SLEEP_PIN): pins.gpio_output_pin_schema,
         }
     )
@@ -54,6 +57,8 @@ async def to_code(config):
     cg.add(var.set_valve(valve))
     pump = await cg.get_variable(config[CONF_PUMP_ID])
     cg.add(var.set_pump(pump))
+    colorimeter = await cg.get_variable(config[CONF_COLORIMETER_ID])
+    cg.add(var.set_colorimeter(colorimeter))
 
     if sleep_pin_config := config.get(CONF_SLEEP_PIN):
         sleep_pin = await cg.gpio_pin_expression(sleep_pin_config)

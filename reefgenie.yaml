@@ -47,6 +47,7 @@ reefgenie:
   id: tankgenie
   valve_id: valve # 
   pump_id: pump
+  colorimeter_id: colorimeter
   sleep_pin: # Sleep pin for both the valve and pump stepper motor, these are shared to save pins on the ESP32
     number: GPIO23
     inverted: true
@@ -88,6 +89,23 @@ sensor:
           max_value: 1.0
           ignore_out_of_range: true
       - delta: 0.05
+  - platform: tcs34725
+    id: colorimeter
+    red_channel:
+      name: "TCS34725 Red Channel"
+    green_channel:
+      name: "TCS34725 Green Channel"
+    blue_channel:
+      name: "TCS34725 Blue Channel"
+    clear_channel:
+      name: "TCS34725 Clear Channel"
+    illuminance:
+      name: "TCS34725 Illuminance"
+    color_temperature:
+      name: "TCS34725 Color Temperature"
+    glass_attenuation_factor: 1.0
+    update_interval: 10s
+    address: 0x29
 
 text_sensor:
   - platform: reefgenie
@@ -97,29 +115,6 @@ text_sensor:
     current_operation:
       id: current_step
       name: Current Operation
-
-# i2c:
-#   sda: GPIO21
-#   scl: GPIO22
-
-# sensor:
-#   - platform: tcs34725
-#     red_channel:
-#       name: "TCS34725 Red Channel"
-#     green_channel:
-#       name: "TCS34725 Green Channel"
-#     blue_channel:
-#       name: "TCS34725 Blue Channel"
-#     clear_channel:
-#       name: "TCS34725 Clear Channel"
-#     illuminance:
-#       name: "TCS34725 Illuminance"
-#     color_temperature:
-#       name: "TCS34725 Color Temperature"
-#     glass_attenuation_factor: 1.0
-#     update_interval: 10s
-#     address: 0x29
-
 
 globals:
   - id: valve_actuator_pos # Integer for storing the stepper position in case of reboot

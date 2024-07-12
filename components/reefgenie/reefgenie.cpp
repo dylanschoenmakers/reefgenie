@@ -30,8 +30,8 @@ void ReefGenie::loop() {
   // Currently running a test, get the current step for the specific test and run it
   TritationStep step = this->current_step();
   switch (step.command) {
-    case SELECT_VALVE:
-      this->select_valve(step.parameter.valve);
+    case OPEN_VALVE:
+      this->open_valve(step.parameter.valve);
       break;
     case PUMP_IN:
       this->pump(step.parameter.amount);
@@ -114,7 +114,7 @@ void ReefGenie::next_step() {
   ESP_LOGD(TAG, "Setting step %d of total %d steps", this->current_step_, tritation.size());
 }
 
-void ReefGenie::select_valve(uint16_t valve) {
+void ReefGenie::open_valve(uint16_t valve) {
   if (this->step_execution_ == 0) {
     // set the target position for the valve
     this->valve_->set_target(valve);
